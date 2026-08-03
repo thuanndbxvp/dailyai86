@@ -53,25 +53,30 @@ try {
         $stmt = $pdo->prepare("
             INSERT INTO licenses (
                 id, license_key, customer_name, email, expiry_date, max_devices, 
+                validity_days, start_on_first_activation, first_activated_at,
                 app_profile, allowed_apps, admin_note, session_version, agency_id, 
                 revoked, created_at, updated_at
             ) VALUES (
                 :id, :license_key, :customer_name, :email, :expiry_date, :max_devices, 
+                :validity_days, :start_on_first_activation, :first_activated_at,
                 :app_profile, :allowed_apps, :admin_note, :session_version, :agency_id, 
                 :revoked, :created_at, :updated_at
             )
             ON DUPLICATE KEY UPDATE
-                customer_name   = VALUES(customer_name),
-                email           = VALUES(email),
-                expiry_date     = VALUES(expiry_date),
-                max_devices     = VALUES(max_devices),
-                app_profile     = VALUES(app_profile),
-                allowed_apps    = VALUES(allowed_apps),
-                admin_note      = VALUES(admin_note),
-                session_version = VALUES(session_version),
-                agency_id       = VALUES(agency_id),
-                revoked         = VALUES(revoked),
-                updated_at      = VALUES(updated_at)
+                customer_name              = VALUES(customer_name),
+                email                      = VALUES(email),
+                expiry_date                = VALUES(expiry_date),
+                max_devices                = VALUES(max_devices),
+                validity_days              = VALUES(validity_days),
+                start_on_first_activation  = VALUES(start_on_first_activation),
+                first_activated_at         = VALUES(first_activated_at),
+                app_profile                = VALUES(app_profile),
+                allowed_apps               = VALUES(allowed_apps),
+                admin_note                 = VALUES(admin_note),
+                session_version            = VALUES(session_version),
+                agency_id                  = VALUES(agency_id),
+                revoked                    = VALUES(revoked),
+                updated_at                 = VALUES(updated_at)
         ");
 
         $count = 0;
@@ -79,20 +84,23 @@ try {
             if (empty($lic['license_key'])) continue;
             
             $stmt->execute([
-                ':id'              => $lic['id'] ?? null,
-                ':license_key'     => $lic['license_key'],
-                ':customer_name'   => $lic['customer_name'] ?? '',
-                ':email'           => $lic['email'] ?? '',
-                ':expiry_date'     => $lic['expiry_date'],
-                ':max_devices'     => $lic['max_devices'] ?? 2,
-                ':app_profile'     => $lic['app_profile'] ?? 'bundle_3apps',
-                ':allowed_apps'    => is_array($lic['allowed_apps'] ?? null) ? json_encode($lic['allowed_apps']) : ($lic['allowed_apps'] ?? '[]'),
-                ':admin_note'      => $lic['admin_note'] ?? null,
-                ':session_version' => $lic['session_version'] ?? 1,
-                ':agency_id'       => $lic['agency_id'] ?? null,
-                ':revoked'         => $lic['revoked'] ?? 0,
-                ':created_at'      => $lic['created_at'] ?? date('Y-m-d H:i:s'),
-                ':updated_at'      => $lic['updated_at'] ?? date('Y-m-d H:i:s'),
+                ':id'                        => $lic['id'] ?? null,
+                ':license_key'               => $lic['license_key'],
+                ':customer_name'             => $lic['customer_name'] ?? '',
+                ':email'                     => $lic['email'] ?? '',
+                ':expiry_date'               => $lic['expiry_date'],
+                ':max_devices'               => $lic['max_devices'] ?? 2,
+                ':validity_days'             => $lic['validity_days'] ?? 365,
+                ':start_on_first_activation' => $lic['start_on_first_activation'] ?? 0,
+                ':first_activated_at'        => $lic['first_activated_at'] ?? null,
+                ':app_profile'               => $lic['app_profile'] ?? 'bundle_3apps',
+                ':allowed_apps'              => is_array($lic['allowed_apps'] ?? null) ? json_encode($lic['allowed_apps']) : ($lic['allowed_apps'] ?? '[]'),
+                ':admin_note'                => $lic['admin_note'] ?? null,
+                ':session_version'           => $lic['session_version'] ?? 1,
+                ':agency_id'                 => $lic['agency_id'] ?? null,
+                ':revoked'                   => $lic['revoked'] ?? 0,
+                ':created_at'                => $lic['created_at'] ?? date('Y-m-d H:i:s'),
+                ':updated_at'                => $lic['updated_at'] ?? date('Y-m-d H:i:s'),
             ]);
             $count++;
         }
