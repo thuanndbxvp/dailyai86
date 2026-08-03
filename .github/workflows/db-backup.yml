@@ -36,7 +36,8 @@ jobs:
           AWS_DEFAULT_REGION: auto
           AWS_ENDPOINT_URL: ${{ secrets.R2_ENDPOINT_URL }}
         run: |
-          aws s3 cp backups/${{ env.BACKUP_FILENAME }} s3://${{ secrets.R2_BUCKET_NAME }}/${{ env.BACKUP_FILENAME }}
+          BUCKET=$(echo "${{ secrets.R2_BUCKET_NAME }}" | tr -d '\r\n ')
+          aws s3 cp backups/${{ env.BACKUP_FILENAME }} "s3://${BUCKET}/${{ env.BACKUP_FILENAME }}"
 
       - name: Cleanup Backup File
         run: rm -rf backups/
