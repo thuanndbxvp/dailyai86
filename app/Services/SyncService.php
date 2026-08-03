@@ -55,13 +55,52 @@ class SyncService {
 
         $body = json_encode($payload);
 
+        // 1. Thử qua cURL (chuẩn nhất cho cPanel hosting)
+        if (function_exists('curl_init')) {
+            $ch = curl_init();
+            curl_setopt_array($ch, [
+                CURLOPT_URL            => $url,
+                CURLOPT_POST           => true,
+                CURLOPT_POSTFIELDS     => $body,
+                CURLOPT_HTTPHEADER     => [
+                    'Content-Type: application/json',
+                    'X-Sync-Token: ' . $secret,
+                ],
+                CURLOPT_RETURNTRANSFER => true,
+                CURLOPT_TIMEOUT        => 15,
+                CURLOPT_CONNECTTIMEOUT => 6,
+                CURLOPT_SSL_VERIFYPEER => false,
+                CURLOPT_SSL_VERIFYHOST => 0,
+                CURLOPT_USERAGENT      => 'vHost-SyncService/1.0',
+            ]);
+
+            $response = curl_exec($ch);
+            $errNo = curl_errno($ch);
+            $errMsg = curl_error($ch);
+            $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+            curl_close($ch);
+
+            if ($errNo !== 0) {
+                return ['success' => false, 'error' => "Lỗi kết nối cURL ({$errNo}): {$errMsg}"];
+            }
+
+            if (!empty($response)) {
+                $data = json_decode($response, true);
+                if (is_array($data)) {
+                    return $data;
+                }
+                return ['success' => false, 'error' => "Phản hồi không phải JSON (HTTP {$httpCode}): " . substr(strip_tags($response), 0, 100)];
+            }
+        }
+
+        // 2. Fallback: stream context (file_get_contents)
         $options = [
             'http' => [
                 'header'  => "Content-Type: application/json\r\n" .
                              "X-Sync-Token: " . $secret . "\r\n",
                 'method'  => 'POST',
                 'content' => $body,
-                'timeout' => 4, // 4s timeout để không làm chậm giao diện admin
+                'timeout' => 15,
                 'ignore_errors' => true,
             ],
             'ssl' => [
@@ -78,7 +117,7 @@ class SyncService {
                 return ['success' => false, 'error' => 'Không thể kết nối tới máy chủ Vercel.'];
             }
             $data = json_decode($result, true);
-            return is_array($data) ? $data : ['success' => false, 'error' => 'Phản hồi không hợp lệ từ Vercel'];
+            return is_array($data) ? $data : ['success' => false, 'error' => 'Phản hồi không hợp lệ: ' . substr(strip_tags($result), 0, 100)];
         } catch (Throwable $e) {
             return ['success' => false, 'error' => $e->getMessage()];
         }
