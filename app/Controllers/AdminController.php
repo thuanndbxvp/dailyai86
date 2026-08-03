@@ -50,11 +50,12 @@ class AdminController {
         Auth::requireLogin();
         $search   = trim((string) ($_GET['search'] ?? ''));
         $status   = in_array($_GET['status'] ?? '', ['active', 'expired', 'revoked']) ? $_GET['status'] : '';
+        $agency   = trim((string) ($_GET['agency'] ?? ''));
         $msg      = (string) ($_GET['msg'] ?? '');
         $perPage  = in_array((int) ($_GET['per_page'] ?? 10), [10, 50, 100]) ? (int) ($_GET['per_page'] ?? 10) : 10;
         $page     = max(1, (int) ($_GET['page'] ?? 1));
 
-        $licenses      = LicenseModel::all($search, $status);
+        $licenses      = LicenseModel::all($search, $status, $agency);
         $totalFiltered = count($licenses);
         $totalPages    = max(1, (int) ceil($totalFiltered / $perPage));
         $page          = min($page, $totalPages);
@@ -71,7 +72,7 @@ class AdminController {
         $agencyStats = Database::hasColumn('licenses', 'agency_id') ? ReportService::byAgency() : [];
 
         self::render('admin/dashboard', compact(
-            'search', 'status', 'msg', 'perPage', 'page',
+            'search', 'status', 'agency', 'msg', 'perPage', 'page',
             'licenses', 'licensesPage', 'totalFiltered', 'totalPages', 'offset',
             'total', 'active', 'expired', 'revoked',
             'appOptions', 'agencyStats'
