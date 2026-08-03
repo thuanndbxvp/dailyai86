@@ -20,6 +20,7 @@ class Database {
         
         // Cấu hình SSL cho TiDB Serverless
         if (defined('DB_SSL') && DB_SSL) {
+            $options[PDO::MYSQL_ATTR_SSL_CA] = APP_ROOT . '/cacert.pem';
             $options[PDO::MYSQL_ATTR_SSL_VERIFY_SERVER_CERT] = false;
         }
 
