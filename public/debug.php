@@ -59,14 +59,62 @@ try {
     echo "<pre style='background:#fee; padding:12px; border:1px solid #f88;'>" . htmlspecialchars($e->getMessage()) . "</pre>";
 }
 
-// 4. Thử chạy toàn bộ app xem có lỗi logic nào không
+// 5. Kiểm tra kết nối tới Vercel Sync Endpoint
+echo '<h3>5. Kiểm tra kết nối tới Vercel Sync Endpoint:</h3>';
+$syncUrl = 'https://dailyai86.vercel.app/api/sync_receiver.php';
+$syncSecret = 'gomhuong1_sync_secret_2026_x86';
+$host = 'dailyai86.vercel.app';
+$ip = gethostbyname($host);
+echo "<ul>";
+echo "<li><b>URL Endpoint:</b> $syncUrl</li>";
+echo "<li><b>DNS Resolve ($host):</b> " . ($ip !== $host ? "<span style='color:green;'>$ip</span>" : "<span style='color:red;'>Không resolve được DNS</span>") . "</li>";
+echo "</ul>";
+
+if (function_exists('curl_init')) {
+    $ch = curl_init();
+    curl_setopt_array($ch, [
+        CURLOPT_URL            => $syncUrl,
+        CURLOPT_POST           => true,
+        CURLOPT_POSTFIELDS     => json_encode(['action' => 'upsert_batch', 'licenses' => []]),
+        CURLOPT_HTTPHEADER     => [
+            'Content-Type: application/json',
+            'X-Sync-Token: ' . $syncSecret,
+        ],
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_TIMEOUT        => 8,
+        CURLOPT_CONNECTTIMEOUT => 5,
+        CURLOPT_IPRESOLVE      => CURL_IPRESOLVE_V4,
+        CURLOPT_HTTP_VERSION   => CURL_HTTP_VERSION_1_1,
+        CURLOPT_SSL_VERIFYPEER => false,
+        CURLOPT_SSL_VERIFYHOST => 0,
+        CURLOPT_USERAGENT      => 'Mozilla/5.0 (vHost-Debug)',
+    ]);
+    $res = curl_exec($ch);
+    $errNo = curl_errno($ch);
+    $errMsg = curl_error($ch);
+    $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    $time = curl_getinfo($ch, CURLINFO_TOTAL_TIME);
+    curl_close($ch);
+
+    if ($errNo === 0 && $httpCode >= 200 && $httpCode < 400) {
+        echo "<p style='color:green; font-weight:bold;'>✅ KẾT NỐI VERCEL THÀNH CÔNG (HTTP $httpCode trong {$time}s)!</p>";
+        echo "<pre style='background:#efe; padding:10px; border:1px solid #8c8;'>" . htmlspecialchars($res) . "</pre>";
+    } else {
+        echo "<p style='color:red; font-weight:bold;'>❌ LỖI KẾT NỐI VERCEL (cURL $errNo / HTTP $httpCode sau {$time}s):</p>";
+        echo "<pre style='background:#fee; padding:10px; border:1px solid #f88;'>" . htmlspecialchars($errMsg ?: $res) . "</pre>";
+    }
+} else {
+    echo "<p style='color:orange;'>cURL không khả dụng trên hosting.</p>";
+}
+
+// 4. Kiểm tra nạp Router & Controller
 echo '<h3>4. Kiểm tra nạp Router & Controller:</h3>';
 try {
-    $_SERVER['REQUEST_URI'] = '/admin/dashboard';
-    $_SERVER['REQUEST_METHOD'] = 'GET';
+    require_once $appRoot . '/app/Auth.php';
+    require_once $appRoot . '/app/Router.php';
     require_once $appRoot . '/routes.php';
-    echo "<p style='color:green;'>✅ Router nạp thành công không bị crash!</p>";
+    echo "<p style='color:green;'>✅ Nạp Router và Routes thành công!</p>";
 } catch (Throwable $e) {
-    echo "<p style='color:red; font-weight:bold;'>❌ LỖI KHI NẠP APP:</p>";
-    echo "<pre style='background:#fee; padding:12px; border:1px solid #f88;'>" . htmlspecialchars($e->getMessage()) . "\n" . htmlspecialchars($e->getTraceAsString()) . "</pre>";
+    echo "<p style='color:red; font-weight:bold;'>❌ LỖI KHI KHỞI CHẠY TRANG ADMIN:</p>";
+    echo "<pre style='background:#fee; padding:12px; border:1px solid #f88;'>" . htmlspecialchars($e->getMessage()) . "\n\n" . htmlspecialchars($e->getTraceAsString()) . "</pre>";
 }

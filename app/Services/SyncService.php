@@ -68,10 +68,13 @@ class SyncService {
                 ],
                 CURLOPT_RETURNTRANSFER => true,
                 CURLOPT_TIMEOUT        => 15,
-                CURLOPT_CONNECTTIMEOUT => 6,
+                CURLOPT_CONNECTTIMEOUT => 8,
+                CURLOPT_IPRESOLVE      => CURL_IPRESOLVE_V4, // Bắt buộc dùng IPv4 để tránh treo IPv6 trên cPanel
+                CURLOPT_HTTP_VERSION   => CURL_HTTP_VERSION_1_1,
                 CURLOPT_SSL_VERIFYPEER => false,
                 CURLOPT_SSL_VERIFYHOST => 0,
-                CURLOPT_USERAGENT      => 'vHost-SyncService/1.0',
+                CURLOPT_FOLLOWLOCATION => true,
+                CURLOPT_USERAGENT      => 'Mozilla/5.0 (vHost-SyncService)',
             ]);
 
             $response = curl_exec($ch);
