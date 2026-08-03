@@ -4,6 +4,8 @@
 $msgMap = [
   'deleted'        => ['success', 'License đã xóa.'],
   'devices_reset'  => ['success', 'Đã reset thiết bị.'],
+  'sync_success'   => ['success', '⚡ Đã đồng bộ thành công ' . (isset($_GET['synced']) ? intval($_GET['synced']) . ' ' : '') . 'license sang TiDB Cloud (Vercel)!'],
+  'sync_failed'    => ['error',   '❌ Lỗi khi đồng bộ sang TiDB: ' . htmlspecialchars($_GET['sync_err'] ?? '')],
   'csrf_error'     => ['error',   'Lỗi CSRF. Vui lòng thử lại.'],
   'not_found'      => ['warn',    'Không tìm thấy license.'],
   'not_revoked'    => ['warn',    'License chưa bị thu hồi — không thể xóa.'],
@@ -142,6 +144,10 @@ $filterUrl = function(array $override) use ($search, $status, $agency, $perPage)
     <?php endif; ?>
   </form>
   <a href="/admin/export?<?php echo http_build_query(['search'=>$search,'status'=>$status,'agency'=>$agency]); ?>" class="btn btn-muted btn-sm">↓ Xuất CSV</a>
+  <form method="POST" action="/admin/sync-tidb" style="display:inline" onsubmit="return confirm('Bạn có chắc muốn đồng bộ toàn bộ License sang TiDB (Vercel)?')">
+    <input type="hidden" name="csrf_token" value="<?php echo Auth::csrfToken(); ?>">
+    <button type="submit" class="btn btn-sm" style="background:#0284c7;color:#fff;border-color:#0284c7" title="Đồng bộ toàn bộ dữ liệu License sang TiDB Cloud (Vercel)">⚡ Đồng bộ TiDB</button>
+  </form>
   <a href="/admin/create" class="btn btn-primary btn-sm">+ Tạo license</a>
 </div>
 

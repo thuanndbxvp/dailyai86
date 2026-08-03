@@ -5,6 +5,10 @@
 
 declare(strict_types=1);
 
+if (is_file(__DIR__ . '/DbSessionHandler.php')) {
+    require_once __DIR__ . '/DbSessionHandler.php';
+}
+
 class Auth {
 
     // ── Session ───────────────────────────────────────────────────────────────
@@ -12,9 +16,13 @@ class Auth {
     public static function startSession(): void {
         if (session_status() !== PHP_SESSION_NONE) return;
         
-        // Vercel Serverless Fix: Use Database Session Handler
-        $db = Database::getInstance()->getPdo();
-        session_set_save_handler(new DbSessionHandler($db), true);
+        // Vercel Serverless / DB Session Handler (if available)
+        if (class_exists('DbSessionHandler')) {
+            try {
+                $db = Database::getInstance()->getPdo();
+                session_set_save_handler(new DbSessionHandler($db), true);
+            } catch (Throwable) {}
+        }
 
         session_set_cookie_params([
             'lifetime' => 0,

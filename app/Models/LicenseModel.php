@@ -224,7 +224,15 @@ class LicenseModel {
 
         $sql  = 'INSERT INTO licenses (' . implode(', ', $cols) . ') VALUES (' . implode(', ', $places) . ')';
         $pdo->prepare($sql)->execute($vals);
-        return (int) $pdo->lastInsertId();
+        $newId = (int) $pdo->lastInsertId();
+
+        // Tự động đồng bộ sang Vercel (TiDB)
+        if (class_exists('\\Services\\SyncService')) {
+            $created = self::find($newId);
+            if ($created) \Services\SyncService::syncOne($created);
+        }
+
+        return $newId;
     }
 
     public static function update(int $id, array $fields): void {
@@ -247,20 +255,36 @@ class LicenseModel {
         Database::getInstance()->getPdo()
             ->prepare('UPDATE licenses SET ' . implode(', ', $sets) . ' WHERE id = ?')
             ->execute($params);
+
+        // Tự động đồng bộ sang Vercel (TiDB)
+        if (class_exists('\\Services\\SyncService')) {
+            $updated = self::find($id);
+            if ($updated) \Services\SyncService::syncOne($updated);
+        }
     }
 
     public static function revoke(int $id): bool {
         $stmt = Database::getInstance()->getPdo()
             ->prepare('UPDATE licenses SET revoked = 1 WHERE id = ?');
         $stmt->execute([$id]);
-        return $stmt->rowCount() > 0;
+        $ok = $stmt->rowCount() > 0;
+        if ($ok && class_exists('\\Services\\SyncService')) {
+            $lic = self::find($id);
+            if ($lic) \Services\SyncService::syncOne($lic);
+        }
+        return $ok;
     }
 
     public static function unrevoke(int $id): bool {
         $stmt = Database::getInstance()->getPdo()
             ->prepare('UPDATE licenses SET revoked = 0 WHERE id = ?');
         $stmt->execute([$id]);
-        return $stmt->rowCount() > 0;
+        $ok = $stmt->rowCount() > 0;
+        if ($ok && class_exists('\\Services\\SyncService')) {
+            $lic = self::find($id);
+            if ($lic) \Services\SyncService::syncOne($lic);
+        }
+        return $ok;
     }
 
     public static function delete(int $id, bool $requireRevoked = true): array {
@@ -274,6 +298,11 @@ class LicenseModel {
             $pdo->beginTransaction();
             $pdo->prepare('DELETE FROM licenses WHERE id = ?')->execute([$id]);
             $pdo->commit();
+
+            // Xoá trên Vercel (TiDB)
+            if (class_exists('\\Services\\SyncService')) {
+                \Services\SyncService::deleteOne((string) $license['license_key']);
+            }
         } catch (\Exception $e) {
             $pdo->rollBack();
             return ['success' => false, 'reason' => 'db_error'];
@@ -382,12 +411,12 @@ class LicenseModel {
     }
 
     public static function getRequestLogs(string $licenseKey, int $limit = 100): array {
-        $limit = max(10, min(300, $limit));
+        $limit = max(10, min(300, (int) $limit));
         if (!Database::hasColumn('api_request_logs', 'license_key')) return [];
         $stmt = Database::getInstance()->getPdo()->prepare(
-            'SELECT * FROM api_request_logs WHERE license_key = ? ORDER BY id DESC LIMIT ?'
+            "SELECT * FROM api_request_logs WHERE license_key = ? ORDER BY id DESC LIMIT {$limit}"
         );
-        $stmt->execute([strtoupper($licenseKey), $limit]);
+        $stmt->execute([strtoupper($licenseKey)]);
         return $stmt->fetchAll();
     }
 

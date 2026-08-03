@@ -33,6 +33,7 @@ Router::add('ANY', '/admin/agencies',       [AdminController::class, 'agencies']
 Router::add('ANY', '/admin/report',         [AdminController::class, 'report']);
 Router::add('ANY', '/admin/change-password',[AdminController::class, 'changePassword']);
 Router::add('GET', '/admin/export',         [AdminController::class, 'export']);
+Router::add('POST','/admin/sync-tidb',      [AdminController::class, 'syncTidb']);
 
 // ── Customer routes ───────────────────────────────────────────────────────────
 Router::add('ANY', '/reset-device',         [AdminController::class, 'customerResetDevice']);
@@ -44,6 +45,8 @@ Router::add('ANY', '/api/license/activate', fn() => require APP_ROOT . '/api/lic
 Router::add('ANY', '/api/license/activate.php', fn() => require APP_ROOT . '/api/license/activate.php');
 Router::add('ANY', '/api/license/verify',   fn() => require APP_ROOT . '/api/license/verify.php');
 Router::add('ANY', '/api/license/verify.php', fn() => require APP_ROOT . '/api/license/verify.php');
+Router::add('POST', '/api/sync_receiver',    fn() => require APP_ROOT . '/api/sync_receiver.php');
+Router::add('POST', '/api/sync_receiver.php',fn() => require APP_ROOT . '/api/sync_receiver.php');
 
 // ── Root redirect ─────────────────────────────────────────────────────────────
 Router::add('GET', '/', function () {

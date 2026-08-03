@@ -740,6 +740,23 @@ class AdminController {
         self::redirect('/admin/login');
     }
 
+    public static function syncTidb(): void {
+        Auth::requireLogin();
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            self::redirect('/admin/dashboard');
+        }
+        if (!Auth::validateCsrf($_POST['csrf_token'] ?? '')) {
+            self::redirect('/admin/dashboard', ['msg' => 'csrf_error']);
+        }
+        $result = \Services\SyncService::syncAll();
+        if ($result['success'] ?? false) {
+            $count = (int) ($result['count'] ?? 0);
+            self::redirect('/admin/dashboard', ['msg' => 'sync_success', 'synced' => $count]);
+        } else {
+            self::redirect('/admin/dashboard', ['msg' => 'sync_failed', 'sync_err' => $result['error'] ?? 'Lỗi không xác định']);
+        }
+    }
+
     // ── Private helpers ───────────────────────────────────────────────────────
 
     private static function validateLicenseForm(array $form): string {

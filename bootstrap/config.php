@@ -85,3 +85,7 @@ define('DEFAULT_LICENSE_PROFILE',          LICENSE_PROFILE_BUNDLE);
 // ── Paths ────────────────────────────────────────────────────────────────────
 define('APP_ROOT',  dirname(__DIR__));
 define('LOGS_DIR',  APP_ROOT . '/logs');
+
+// ── Realtime Sync ────────────────────────────────────────────────────────────
+define('SYNC_SECRET',     _cfg_env('SYNC_SECRET', 'gomhuong1_sync_secret_2026_x86'));
+define('VERCEL_SYNC_URL', _cfg_env('VERCEL_SYNC_URL', 'https://dailyai86.vercel.app/api/sync_receiver.php'));
