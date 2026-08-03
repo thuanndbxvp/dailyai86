@@ -44,7 +44,8 @@ define('DB_NAME',    _cfg_env('DB_NAME',    ''));
 define('DB_USER',    _cfg_env('DB_USER',    ''));
 define('DB_PASS',    _cfg_env('DB_PASS',    ''));
 define('DB_CHARSET', _cfg_env('DB_CHARSET', 'utf8mb4'));
-define('DB_SSL',     _cfg_env('DB_SSL',     'false') === 'true');
+$dbSslEnv = strtolower(_cfg_env('DB_SSL', 'false'));
+define('DB_SSL', $dbSslEnv === 'true' || $dbSslEnv === '1' || strpos(DB_HOST, 'tidbcloud.com') !== false);
 
 // ── Session / Auth ───────────────────────────────────────────────────────────
 define('SESSION_TIMEOUT',    (int)_cfg_env('SESSION_TIMEOUT',    '3600'));
