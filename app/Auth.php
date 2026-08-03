@@ -11,6 +11,11 @@ class Auth {
 
     public static function startSession(): void {
         if (session_status() !== PHP_SESSION_NONE) return;
+        
+        // Vercel Serverless Fix: Use Database Session Handler
+        $db = Database::getInstance()->getPdo();
+        session_set_save_handler(new DbSessionHandler($db), true);
+
         session_set_cookie_params([
             'lifetime' => 0,
             'path'     => '/',
