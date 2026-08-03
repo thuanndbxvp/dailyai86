@@ -39,8 +39,11 @@ Router::add('ANY', '/reset-device',         [AdminController::class, 'customerRe
 
 // ── API routes ────────────────────────────────────────────────────────────────
 Router::add('ANY', '/api/verify',           fn() => require APP_ROOT . '/api/verify.php');
+Router::add('ANY', '/api/verify.php',       fn() => require APP_ROOT . '/api/verify.php');
 Router::add('ANY', '/api/license/activate', fn() => require APP_ROOT . '/api/license/activate.php');
+Router::add('ANY', '/api/license/activate.php', fn() => require APP_ROOT . '/api/license/activate.php');
 Router::add('ANY', '/api/license/verify',   fn() => require APP_ROOT . '/api/license/verify.php');
+Router::add('ANY', '/api/license/verify.php', fn() => require APP_ROOT . '/api/license/verify.php');
 
 // ── Root redirect ─────────────────────────────────────────────────────────────
 Router::add('GET', '/', function () {
