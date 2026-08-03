@@ -1,0 +1,41 @@
+name: TiDB Backup to Cloudflare R2
+
+on:
+  schedule:
+    - cron: '0 17 * * *' # Chạy vào lúc 00:00 giờ Việt Nam (UTC+7)
+  workflow_dispatch: # Cho phép chạy thủ công
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Install MySQL Client
+        run: sudo apt-get update && sudo apt-get install -y mysql-client
+
+      - name: Create Backup
+        run: |
+          mkdir -p backups
+          DATE=$(date +'%Y-%m-%d_%H-%M-%S')
+          FILENAME="backup_adminx_${DATE}.sql"
+          mysqldump -h ${{ secrets.DB_HOST }} -P ${{ secrets.DB_PORT }} -u ${{ secrets.DB_USER }} -p${{ secrets.DB_PASS }} --ssl-mode=VERIFY_IDENTITY --ssl-ca=/etc/ssl/certs/ca-certificates.crt ${{ secrets.DB_NAME }} > backups/${FILENAME}
+          echo "BACKUP_FILENAME=${FILENAME}" >> $GITHUB_ENV
+
+      - name: Install AWS CLI
+        run: |
+          curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+          unzip -q awscliv2.zip
+          sudo ./aws/install --update
+
+      - name: Upload to Cloudflare R2
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION: auto
+        run: |
+          aws s3 cp backups/${{ env.BACKUP_FILENAME }} s3://${{ secrets.R2_BUCKET_NAME }}/${{ env.BACKUP_FILENAME }} --endpoint-url ${{ secrets.R2_ENDPOINT_URL }}
+
+      - name: Cleanup Backup File
+        run: rm -rf backups/
