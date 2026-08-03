@@ -113,7 +113,14 @@ class AppModel {
              (app_id, app_name, verify_mode, default_max_devices, default_years, device_tracking, is_active, created_at)
              VALUES (?, ?, ?, ?, ?, ?, ?, NOW())"
         )->execute([$appId, $appName, $verifyMode, $defaultMaxDevices, $defaultYears, $deviceTracking, $isActive]);
-        return (int) $pdo->lastInsertId();
+        $newId = (int) $pdo->lastInsertId();
+
+        if (class_exists('\\Services\\SyncService')) {
+            $created = self::find($newId);
+            if ($created) \Services\SyncService::syncApp($created);
+        }
+
+        return $newId;
     }
 
     public static function update(
@@ -139,6 +146,11 @@ class AppModel {
         );
         $stmt->execute([$appName, $verifyMode, $defaultMaxDevices, $defaultYears, $deviceTracking, $isActive, $id]);
         if ($stmt->rowCount() <= 0 && !self::find($id)) throw new \Exception('Không tìm thấy app');
+
+        if (class_exists('\\Services\\SyncService')) {
+            $updated = self::find($id);
+            if ($updated) \Services\SyncService::syncApp($updated);
+        }
     }
 
     public static function setActive(int $id, int $active): void {
@@ -149,6 +161,11 @@ class AppModel {
         );
         $stmt->execute([$active === 1 ? 1 : 0, $id]);
         if ($stmt->rowCount() <= 0 && !self::find($id)) throw new \Exception('Không tìm thấy app');
+
+        if (class_exists('\\Services\\SyncService')) {
+            $updated = self::find($id);
+            if ($updated) \Services\SyncService::syncApp($updated);
+        }
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────────

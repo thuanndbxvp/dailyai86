@@ -125,6 +125,88 @@ try {
         exit;
     }
 
+    if ($action === 'upsert_app' || $action === 'upsert_apps_batch') {
+        $apps = $action === 'upsert_app' ? [$payload['app']] : ($payload['apps'] ?? []);
+        if (empty($apps)) {
+            echo json_encode(['success' => true, 'count' => 0, 'message' => 'No apps to sync']);
+            exit;
+        }
+
+        $pdo->beginTransaction();
+        $stmt = $pdo->prepare("
+            INSERT INTO platform_apps (
+                id, app_id, app_name, verify_mode, default_max_devices, default_years,
+                device_tracking, is_active, created_at, updated_at
+            ) VALUES (
+                :id, :app_id, :app_name, :verify_mode, :default_max_devices, :default_years,
+                :device_tracking, :is_active, :created_at, :updated_at
+            )
+            ON DUPLICATE KEY UPDATE
+                app_name            = VALUES(app_name),
+                verify_mode         = VALUES(verify_mode),
+                default_max_devices = VALUES(default_max_devices),
+                default_years       = VALUES(default_years),
+                device_tracking     = VALUES(device_tracking),
+                is_active           = VALUES(is_active),
+                updated_at          = VALUES(updated_at)
+        ");
+
+        $count = 0;
+        foreach ($apps as $a) {
+            if (empty($a['app_id'])) continue;
+            $stmt->execute([
+                ':id'                  => $a['id'] ?? null,
+                ':app_id'              => strtolower(trim($a['app_id'])),
+                ':app_name'            => $a['app_name'] ?? '',
+                ':verify_mode'         => $a['verify_mode'] ?? 'standard',
+                ':default_max_devices' => $a['default_max_devices'] ?? 2,
+                ':default_years'       => $a['default_years'] ?? 1,
+                ':device_tracking'     => $a['device_tracking'] ?? 1,
+                ':is_active'           => $a['is_active'] ?? 1,
+                ':created_at'          => $a['created_at'] ?? date('Y-m-d H:i:s'),
+                ':updated_at'          => $a['updated_at'] ?? date('Y-m-d H:i:s'),
+            ]);
+            $count++;
+        }
+        $pdo->commit();
+
+        echo json_encode(['success' => true, 'count' => $count, 'message' => "Đã đồng bộ $count apps vào TiDB!"]);
+        exit;
+    }
+
+    if ($action === 'upsert_alias') {
+        $alias = $payload['alias'] ?? [];
+        if (!empty($alias['alias']) && !empty($alias['app_id'])) {
+            $stmt = $pdo->prepare("
+                INSERT INTO app_aliases (alias, app_id, note, created_at)
+                VALUES (:alias, :app_id, :note, :created_at)
+                ON DUPLICATE KEY UPDATE
+                    app_id = VALUES(app_id),
+                    note   = VALUES(note)
+            ");
+            $stmt->execute([
+                ':alias'      => strtolower(trim($alias['alias'])),
+                ':app_id'     => strtolower(trim($alias['app_id'])),
+                ':note'       => $alias['note'] ?? null,
+                ':created_at' => $alias['created_at'] ?? date('Y-m-d H:i:s'),
+            ]);
+        }
+        echo json_encode(['success' => true, 'message' => "Đã đồng bộ alias thành công!"]);
+        exit;
+    }
+
+    if ($action === 'delete_alias') {
+        $aliasId = (int) ($payload['alias_id'] ?? 0);
+        $aliasStr = trim((string) ($payload['alias'] ?? ''));
+        if ($aliasId > 0) {
+            $pdo->prepare("DELETE FROM app_aliases WHERE id = ?")->execute([$aliasId]);
+        } elseif ($aliasStr !== '') {
+            $pdo->prepare("DELETE FROM app_aliases WHERE alias = ?")->execute([$aliasStr]);
+        }
+        echo json_encode(['success' => true, 'message' => "Đã xoá alias!"]);
+        exit;
+    }
+
     http_response_code(400);
     echo json_encode(['error' => 'Unknown action']);
 

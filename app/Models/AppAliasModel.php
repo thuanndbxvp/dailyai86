@@ -70,12 +70,26 @@ class AppAliasModel {
         Database::getInstance()->getPdo()->prepare(
             'INSERT INTO app_aliases (alias, app_id, note, created_at) VALUES (?, ?, ?, NOW())'
         )->execute([$alias, $appId, trim($note)]);
+
+        if (class_exists('\\Services\\SyncService')) {
+            \Services\SyncService::syncAlias([
+                'alias'      => $alias,
+                'app_id'     => $appId,
+                'note'       => trim($note),
+                'created_at' => date('Y-m-d H:i:s'),
+            ]);
+        }
     }
 
     public static function delete(int $id): void {
         self::boot();
+        $existing = self::find($id);
         Database::getInstance()->getPdo()
             ->prepare('DELETE FROM app_aliases WHERE id = ?')
             ->execute([$id]);
+
+        if ($existing && class_exists('\\Services\\SyncService')) {
+            \Services\SyncService::deleteAlias($id, (string) ($existing['alias'] ?? ''));
+        }
     }
 }

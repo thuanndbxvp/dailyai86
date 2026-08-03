@@ -47,6 +47,51 @@ class SyncService {
     }
 
     /**
+     * Đồng bộ tức thì 1 app vừa tạo / sửa sang Vercel.
+     */
+    public static function syncApp(array $app): array {
+        return self::sendRequest([
+            'action' => 'upsert_app',
+            'app'    => $app
+        ]);
+    }
+
+    /**
+     * Gửi toàn bộ platform_apps sang Vercel.
+     */
+    public static function syncAllApps(): array {
+        $pdo = Database::getInstance()->getPdo();
+        $stmt = $pdo->query("SELECT * FROM platform_apps");
+        $apps = $stmt->fetchAll();
+
+        return self::sendRequest([
+            'action' => 'upsert_apps_batch',
+            'apps'   => $apps
+        ]);
+    }
+
+    /**
+     * Đồng bộ 1 alias sang Vercel.
+     */
+    public static function syncAlias(array $alias): array {
+        return self::sendRequest([
+            'action' => 'upsert_alias',
+            'alias'  => $alias
+        ]);
+    }
+
+    /**
+     * Xoá 1 alias trên Vercel.
+     */
+    public static function deleteAlias(int $aliasId, string $alias = ''): array {
+        return self::sendRequest([
+            'action'   => 'delete_alias',
+            'alias_id' => $aliasId,
+            'alias'    => $alias
+        ]);
+    }
+
+    /**
      * Gửi request HTTPS POST sang Vercel endpoint.
      */
     private static function sendRequest(array $payload): array {
