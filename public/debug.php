@@ -1,4 +1,13 @@
 <?php
+declare(strict_types=1);
+
+$appRoot = dirname(__DIR__);
+require_once $appRoot . '/bootstrap/app.php';
+require_once $appRoot . '/app/Auth.php';
+
+// Bảo vệ bằng Layer 1 Gate để tránh lộ thông tin chẩn đoán ra ngoài
+Auth::enforceLayer1();
+
 ini_set('display_errors', '1');
 ini_set('display_startup_errors', '1');
 error_reporting(E_ALL);
@@ -6,8 +15,6 @@ error_reporting(E_ALL);
 header('Content-Type: text/html; charset=utf-8');
 
 echo '<h2>CPanel Local Database Diagnostic Tool</h2>';
-
-$appRoot = dirname(__DIR__);
 
 // 1. Kiểm tra đọc file .env
 echo '<h3>1. Kiểm tra cấu hình .env:</h3>';
